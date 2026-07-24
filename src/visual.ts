@@ -172,6 +172,21 @@ export class Visual implements IVisual {
         // WASM files must be shipped alongside the bundled visual assets.
         // Copy node_modules/web-ifc/*.wasm into ./assets/wasm/ (see README) and reference it here.
         this.ifcLoader.ifcManager.setWasmPath("assets/wasm/");
+
+        // Power BI Service often runs inside an iframe without cross-origin isolation,
+        // which prevents use of SharedArrayBuffer required by multi-threaded WASM.
+        // Force single-threaded mode to ensure the visual works in Power BI Service.
+        try {
+            const managerAny = this.ifcLoader.ifcManager as any;
+            if (typeof managerAny.useWebWorkers === 'function') {
+                // prefer synchronous call if available
+                managerAny.useWebWorkers(false);
+            }
+        } catch (e) {
+            // If setting fails, log a warning and continue; fallback will be single-threaded.
+            // eslint-disable-next-line no-console
+            console.warn('ifcManager.useWebWorkers disabled failed:', e);
+        }
     }
 
     private registerClickHandler(): void {
