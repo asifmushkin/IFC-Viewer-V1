@@ -8,6 +8,7 @@ import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-
 import JSZip from "jszip";
 import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import { VisualFormattingSettingsModel } from "./settings";
+import { WEB_IFC_WASM_BASE64 } from "./webifc-wasm-base64";
 
 import IVisual = powerbi.extensibility.visual.IVisual;
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
@@ -232,6 +233,29 @@ export class Visual implements IVisual {
         this.ifcLoader = new IFCLoader();
         const wasmPath = "assets/wasm/";
         this.ifcLoader.ifcManager.setWasmPath(wasmPath);
+        // If we have an embedded base64 WASM, monkey-patch fetch to return it
+        // for requests to the wasm file. This avoids network fetch issues in
+        // restrictive host environments (Power BI sandbox/CDN restrictions).
+        if (typeof WEB_IFC_WASM_BASE64 === 'string' && WEB_IFC_WASM_BASE64.length > 0) {
+            try {
+                const originalFetch = (window as any).fetch.bind(window);
+                (window as any).fetch = async (input: any, init?: any) => {
+                    try {
+                        const url = typeof input === 'string' ? input : (input && input.url) ? input.url : String(input);
+                        if (url && url.toLowerCase().endsWith('web-ifc.wasm')) {
+                            const binary = Uint8Array.from(atob(WEB_IFC_WASM_BASE64), c => c.charCodeAt(0));
+                            return new Response(binary, { headers: { 'Content-Type': 'application/wasm' } });
+                        }
+                    } catch (e) {
+                        console.warn('Embedded WASM fetch fallback failed:', e);
+                    }
+                    return originalFetch(input, init);
+                };
+                console.log('Installed embedded WASM fetch fallback');
+            } catch (e) {
+                console.warn('Failed to install embedded WASM fetch fallback:', e);
+            }
+        }
         // Diagnostic: try fetching the wasm directly so we can surface clearer errors
         (async () => {
             try {
