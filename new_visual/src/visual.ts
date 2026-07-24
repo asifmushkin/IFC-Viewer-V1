@@ -93,6 +93,8 @@ export class Visual implements IVisual {
         this.uploadButton.style.padding = "6px 10px";
         this.uploadButton.style.fontSize = "12px";
         this.uploadButton.addEventListener("click", () => this.fileInput.click());
+        this.uploadButton.style.display = "block";
+        this.uploadButton.disabled = false;
         this.target.appendChild(this.uploadButton);
 
         this.resetButton = document.createElement("button");
@@ -346,6 +348,36 @@ export class Visual implements IVisual {
                 coordinates: [10, 10],
                 isTouchEvent: false
             });
+            // If the failure looks like a WebAssembly.instantiate / LinkError,
+            // try to compile the embedded WASM and retry parsing.
+            const errText = message.toLowerCase();
+            if (errText.includes('webassembly') || errText.includes('instantiate') || errText.includes('linkerror') || errText.includes('wasm')) {
+                try {
+                    this.setStatus('Retrying with embedded WASM...', false);
+                    const bytes = Uint8Array.from(atob(WEB_IFC_WASM_BASE64), c => c.charCodeAt(0));
+                    // Try compiling the module and assigning to ifcManager (best-effort)
+                    const compiled = await WebAssembly.compile(bytes);
+                    try {
+                        (this.ifcLoader.ifcManager as any).wasmModule = compiled;
+                    } catch (assignErr) {
+                        console.warn('Could not set wasmModule on ifcManager:', assignErr);
+                    }
+                    // Retry parsing
+                    const retryModel = await this.ifcLoader.ifcManager.parse(buffer);
+                    retryModel.name = 'ifcModel';
+                    this.currentModel = retryModel;
+                    this.scene.add(retryModel);
+                    this.frameCameraToModel(retryModel);
+                    if (fileName) this.localFileName = fileName;
+                    this.setStatus(this.localFileName ? `Local: ${this.localFileName}` : 'Local IFC loaded');
+                    this.resetButton.disabled = false;
+                    return;
+                } catch (retryErr) {
+                    console.error('Retry with embedded WASM failed:', retryErr);
+                    const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+                    this.setStatus(`Retry failed: ${retryMsg}`, true);
+                }
+            }
         }
     }
 
