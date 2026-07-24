@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { IFCLoader } from "web-ifc-three/IFCLoader";
 import { IFCModel } from "web-ifc-three/IFC/components/IFCModel";
 import { acceleratedRaycast, computeBoundsTree, disposeBoundsTree } from "three-mesh-bvh";
+import JSZip from "jszip";
 import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 import { VisualFormattingSettingsModel } from "./settings";
 
@@ -71,16 +72,12 @@ export class Visual implements IVisual {
 
         this.fileInput = document.createElement("input");
         this.fileInput.type = "file";
-        this.fileInput.accept = ".ifc";
+        this.fileInput.accept = ".ifc,.ifc.zip";
         this.fileInput.style.display = "none";
         this.fileInput.addEventListener("change", async () => {
             const file = this.fileInput.files?.[0];
             if (!file) return;
-            const arrayBuffer = await file.arrayBuffer();
-            this.localFileName = file.name;
-            this.isLocalFileLoaded = true;
-            this.currentUrl = null;
-            await this.loadIfcBuffer(arrayBuffer);
+            await this.loadIfcFile(file);
         });
         this.target.appendChild(this.fileInput);
 
@@ -244,30 +241,77 @@ export class Visual implements IVisual {
         }
     }
 
-    private async loadIfcBuffer(buffer: ArrayBuffer): Promise<void> {
+    private async loadIfcFile(file: File): Promise<void> {
+        const fileName = file.name;
+        const lowerFileName = fileName.toLowerCase();
+
+        if (lowerFileName.endsWith(".ifc")) {
+            await this.loadIfcBuffer(await file.arrayBuffer(), fileName);
+            return;
+        }
+
+        if (lowerFileName.endsWith(".ifc.zip") || lowerFileName.endsWith(".ifczip")) {
+            this.setStatus("Extracting IFC from ZIP...");
+            try {
+                const zip = await JSZip.loadAsync(await file.arrayBuffer());
+                const ifcEntry = Object.values(zip.files).find((entry) => entry.name.toLowerCase().endsWith(".ifc"));
+                if (!ifcEntry) {
+                    this.setStatus("No .ifc file found inside ZIP archive.", true);
+                    return;
+                }
+                const ifcBuffer = await ifcEntry.async("arraybuffer");
+                this.localFileName = ifcEntry.name;
+                this.isLocalFileLoaded = true;
+                this.currentUrl = null;
+                await this.loadIfcBuffer(ifcBuffer, ifcEntry.name);
+            } catch (err) {
+                console.error("Failed to unzip IFC archive:", err);
+                this.setStatus("Could not read .ifc.zip archive.", true);
+            }
+            return;
+        }
+
+        this.setStatus("Selected file is not a supported IFC file.", true);
+    }
+
+    private async loadIfcBuffer(buffer: ArrayBuffer, fileName?: string): Promise<void> {
         if (this.currentModel) {
             this.scene.remove(this.currentModel);
             await this.ifcLoader.ifcManager.dispose();
             this.initIfcLoader();
         }
 
+        this.setStatus("Loading local IFC...");
         try {
             const model = await this.ifcLoader.ifcManager.parse(buffer);
             model.name = "ifcModel";
             this.currentModel = model;
             this.scene.add(model);
             this.frameCameraToModel(model);
-            this.statusLabel.textContent = this.localFileName ? `Local: ${this.localFileName}` : "Local IFC loaded";
+            if (fileName) {
+                this.localFileName = fileName;
+            }
+            this.setStatus(this.localFileName ? `Local: ${this.localFileName}` : "Local IFC loaded");
             this.resetButton.disabled = false;
         } catch (err) {
             console.error("Failed to load IFC model from buffer:", err);
+            const message = err instanceof Error ? err.message : String(err);
+            this.setStatus("Could not load IFC file. Please select a valid .ifc file.", true);
             this.host.tooltipService.show({
-                dataItems: [{ displayName: "Error", value: "Could not load IFC file. Select a valid .ifc file." }],
+                dataItems: [
+                    { displayName: "Error", value: "Could not load IFC file. Please select a valid .ifc file." },
+                    { displayName: "Details", value: message }
+                ],
                 identities: [],
                 coordinates: [10, 10],
                 isTouchEvent: false
             });
         }
+    }
+
+    private setStatus(message: string, isError = false): void {
+        this.statusLabel.textContent = message;
+        this.statusLabel.style.color = isError ? "#ff6666" : "#ffffff";
     }
 
     private resetModel(): void {
