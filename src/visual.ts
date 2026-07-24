@@ -297,6 +297,11 @@ export class Visual implements IVisual {
             // actual SharePoint/Blob storage domain(s) before packaging.
             const response = await fetch(url);
             const buffer = await response.arrayBuffer();
+
+            if (!this.isLikelyIfc(buffer)) {
+                throw new Error("Fetched content does not appear to be a valid IFC STEP file.");
+            }
+
             const model = await this.ifcLoader.ifcManager.parse(buffer);
             model.name = "ifcModel";
             this.currentModel = model;
@@ -305,12 +310,21 @@ export class Visual implements IVisual {
         } catch (err) {
             console.error("Failed to load IFC model:", err);
             this.host.tooltipService.show({
-                dataItems: [{ displayName: "Error", value: "Could not load IFC file. Check the URL and WebAccess privilege domains." }],
+                dataItems: [{
+                    displayName: "Error",
+                    value: "Could not load IFC file. Ensure the URL points to a raw .ifc file and that Power BI Service has permission to fetch it."
+                }],
                 identities: [],
                 coordinates: [10, 10],
                 isTouchEvent: false
             });
         }
+    }
+
+    private isLikelyIfc(buffer: ArrayBuffer): boolean {
+        const sampleBytes = new Uint8Array(buffer.slice(0, 128));
+        const text = new TextDecoder("utf-8", { fatal: false }).decode(sampleBytes).trim().toUpperCase();
+        return text.startsWith("ISO-10303-21;") || text.includes("FILE_SCHEMA") || text.includes("DATA;");
     }
 
     private frameCameraToModel(model: THREE.Object3D): void {
