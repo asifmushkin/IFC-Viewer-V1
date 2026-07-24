@@ -1,0 +1,97 @@
+{
+  "dataRoles": [
+    {
+      "displayName": "IFC File URL",
+      "name": "ifcUrl",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Element ID",
+      "name": "elementId",
+      "kind": "Grouping"
+    },
+    {
+      "displayName": "Tooltip / Attribute fields",
+      "name": "tooltipFields",
+      "kind": "Measure"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        { "ifcUrl": { "max": 1 }, "elementId": { "max": 1 } }
+      ],
+      "categorical": {
+        "categories": {
+          "for": { "in": "ifcUrl" },
+          "dataReductionAlgorithm": { "top": { "count": 1 } }
+        },
+        "values": {
+          "group": {
+            "by": "elementId",
+            "select": [{ "for": { "in": "tooltipFields" } }],
+            "dataReductionAlgorithm": { "top": { "count": 10000 } }
+          }
+        }
+      }
+    }
+  ],
+  "objects": {
+    "sceneSettings": {
+      "displayName": "3D Scene",
+      "properties": {
+        "backgroundColor": {
+          "displayName": "Background color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "showGrid": {
+          "displayName": "Show ground grid",
+          "type": { "bool": true }
+        },
+        "autoRotate": {
+          "displayName": "Auto-rotate camera",
+          "type": { "bool": true }
+        }
+      }
+    },
+    "selectionSettings": {
+      "displayName": "Selection",
+      "properties": {
+        "highlightColor": {
+          "displayName": "Highlight color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "enableCrossFilter": {
+          "displayName": "Cross-filter report on element click",
+          "type": { "bool": true }
+        }
+      }
+    },
+    "ifcFileState": {
+      "displayName": "IFC File State",
+      "properties": {
+        "ifc_file_base64": {
+          "displayName": "IFC file data",
+          "type": { "text": true }
+        },
+        "ifc_file_name": {
+          "displayName": "IFC file name",
+          "type": { "text": true }
+        }
+      }
+    }
+  },
+  "privileges": [
+    {
+      "name": "WebAccess",
+      "essential": true,
+      "parameters": [
+        "https://*.sharepoint.com",
+        "https://*.blob.core.windows.net"
+      ]
+    }
+  ],
+  "supportsHighlight": true,
+  "supportsMultiVisualSelection": true,
+  "sorting": { "default": {} }
+}

@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "target": "es2017",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "./.tmp/build/",
+    "moduleDetection": "force",
+    "jsx": "react",
+    "reactNamespace": "React",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "strict": false,
+    "lib": ["es2017", "dom"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"],
+  "files": ["src/visual.ts"],
+  "exclude": ["node_modules"]
+}

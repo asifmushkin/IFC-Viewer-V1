@@ -1,0 +1,24 @@
+{
+  "visual": {
+    "name": "powerbi-3D_v1",
+    "displayName": "PowerBI 3D v1",
+    "guid": "powerbi_3D_v1_A1B2C3D4E5F6",
+    "visualClassName": "Visual",
+    "version": "1.0.0.0",
+    "description": "A Power BI visual for loading and rendering IFC models in 3D.",
+    "supportUrl": "https://github.com/asifmushkin/PowerBI3D-ifc",
+    "gitHubUrl": "https://github.com/asifmushkin/PowerBI3D-ifc"
+  },
+  "apiVersion": "5.9.0",
+  "author": {
+    "name": "IFC Visual Scratch",
+    "email": "opensource@example.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "externalJS": [],
+  "style": "style/visual.less",
+  "capabilities": "capabilities.json",
+  "stringResources": []
+}
