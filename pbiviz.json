@@ -1,10 +1,10 @@
 {
   "visual": {
-    "name": "ifc3dViewer",
-    "displayName": "IFC 3D Viewer v1",
-    "guid": "ifc3dViewer_A1B2C3D4E5F6",
+    "name": "ifcPowerBIServiceViewer",
+    "displayName": "IFC Power BI Service Viewer",
+    "guid": "ifcPowerBIServiceViewer_A1B2C3D4E5F6",
     "visualClassName": "Visual",
-    "version": "1.0.0.0-v1",
+    "version": "1.0.1.0",
     "description": "Loads and renders IFC (BIM) models in 3D directly inside a Power BI report.",
     "supportUrl": "https://github.com",
     "gitHubUrl": "https://github.com"
