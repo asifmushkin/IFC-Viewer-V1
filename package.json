@@ -1,0 +1,30 @@
+{
+  "name": "ifc3dviewer",
+  "version": "1.0.0.0-v1",
+  "description": "Custom Power BI visual that renders IFC (BIM) models in 3D using three.js + web-ifc-three",
+  "scripts": {
+    "start": "pbiviz start",
+    "package": "pbiviz package",
+    "postinstall": "node ./scripts/copy-wasm.js",
+    "postpackage": "node ./scripts/copy-wasm.js",
+    "lint": "eslint ./src/**/*.ts"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/three": "^0.149.0",
+    "powerbi-visuals-api": "~5.9.0",
+    "powerbi-visuals-tools": "^5.4.1",
+    "powerbi-visuals-utils-formattingmodel": "*",
+    "typescript": "^5.4.3",
+    "ts-loader": "^9.5.1",
+    "less": "^4.2.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-powerbi-visuals": "^0.8.1"
+  },
+  "dependencies": {
+    "three": "^0.149.0",
+    "web-ifc": "^0.0.53",
+    "web-ifc-three": "^0.0.126"
+  }
+}

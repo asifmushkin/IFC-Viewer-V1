@@ -1,0 +1,17 @@
+{
+		"version": "1.0.0.0-v1",
+		"author": {"name":"Open Source","email":"opensource@example.com"},
+		"resources": [
+			{
+				"resourceId": "rId0",
+				"sourceType": 5,
+				"file": "resources/ifc3dViewer_A1B2C3D4E5F6.pbiviz.json"
+			}
+		],
+		"visual": {"name":"ifc3dViewer","displayName":"IFC 3D Viewer v1","guid":"ifc3dViewer_A1B2C3D4E5F6","visualClassName":"Visual","version":"1.0.0.0-v1","description":"Loads and renders IFC (BIM) models in 3D directly inside a Power BI report.","supportUrl":"https://github.com","gitHubUrl":"https://github.com"},
+		"metadata": {
+			"pbivizjson": {
+				"resourceId": "rId0"
+			}
+		}
+	}
