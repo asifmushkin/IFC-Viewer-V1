@@ -230,7 +230,23 @@ export class Visual implements IVisual {
 
     private initIfcLoader(): void {
         this.ifcLoader = new IFCLoader();
-        this.ifcLoader.ifcManager.setWasmPath("assets/wasm/");
+        const wasmPath = "assets/wasm/";
+        this.ifcLoader.ifcManager.setWasmPath(wasmPath);
+        // Diagnostic: try fetching the wasm directly so we can surface clearer errors
+        (async () => {
+            try {
+                const resp = await fetch(wasmPath + "web-ifc.wasm");
+                if (!resp.ok) {
+                    console.error("WASM fetch failed with status:", resp.status, resp.statusText);
+                    this.setStatus(`WASM fetch failed: ${resp.status}`, true);
+                } else {
+                    console.log("WASM is accessible at", wasmPath + "web-ifc.wasm");
+                }
+            } catch (err) {
+                console.error("Failed to fetch WASM for diagnostics:", err);
+                this.setStatus(`Failed to fetch WASM: ${err instanceof Error ? err.message : String(err)}`, true);
+            }
+        })();
         try {
             const managerAny = this.ifcLoader.ifcManager as any;
             if (typeof managerAny.useWebWorkers === "function") {
