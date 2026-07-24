@@ -4,7 +4,7 @@
     "displayName": "IFC Viewer v3",
     "guid": "ifc_viewer_v3_A1B2C3D4E5F6",
     "visualClassName": "Visual",
-    "version": "1.0.3.0",
+    "version": "3.0.0.0",
     "description": "Loads and renders IFC (BIM) models in 3D directly inside a Power BI report.",
     "supportUrl": "https://github.com",
     "gitHubUrl": "https://github.com"
