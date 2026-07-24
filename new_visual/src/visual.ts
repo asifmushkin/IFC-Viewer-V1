@@ -314,6 +314,57 @@ export class Visual implements IVisual {
         this.statusLabel.style.color = isError ? "#ff6666" : "#ffffff";
     }
 
+    private async handleSelection(intersection: THREE.Intersection, event: MouseEvent): Promise<void> {
+        if (!this.currentModel) return;
+
+        const mesh = intersection.object as THREE.Mesh;
+        if (!mesh.geometry || intersection.faceIndex === undefined) return;
+
+        const expressId = this.ifcLoader.ifcManager.getExpressId(mesh.geometry, intersection.faceIndex);
+        const properties = await this.ifcLoader.ifcManager.getItemProperties(this.currentModel.modelID, expressId, true);
+
+        const dataItems = this.buildTooltipDataItems(properties);
+        const coordinates = [event.clientX, event.clientY];
+
+        this.host.tooltipService.show({
+            dataItems,
+            identities: [],
+            coordinates,
+            isTouchEvent: false
+        });
+    }
+
+    private buildTooltipDataItems(properties: any[]): Array<{ displayName: string; value: string }> {
+        const dataItems: Array<{ displayName: string; value: string }> = [];
+        for (const property of properties) {
+            if (!property) continue;
+            const displayName = property.PropertySet?.Name || property.Name || property.ifcType || property.type || property.GlobalId || property.Name;
+            const value = this.formatPropertyValue(property);
+            if (displayName && value !== undefined) {
+                dataItems.push({ displayName: String(displayName), value: String(value) });
+            }
+        }
+        return dataItems.length > 0 ? dataItems : [{ displayName: "Element", value: `#${properties[0]?.id ?? "unknown"}` }];
+    }
+
+    private formatPropertyValue(property: any): string | undefined {
+        if (property === null || property === undefined) return undefined;
+        if (typeof property === "string" || typeof property === "number" || typeof property === "boolean") {
+            return String(property);
+        }
+        if (Array.isArray(property)) {
+            return property.map((item) => this.formatPropertyValue(item)).filter(Boolean).join(", ");
+        }
+        if (typeof property === "object") {
+            if (property.value !== undefined) return String(property.value);
+            return Object.entries(property)
+                .map(([key, value]) => `${key}: ${this.formatPropertyValue(value)}`)
+                .filter(Boolean)
+                .join("; ");
+        }
+        return undefined;
+    }
+
     private resetModel(): void {
         if (this.currentModel) {
             this.scene.remove(this.currentModel);
@@ -356,6 +407,8 @@ export class Visual implements IVisual {
                         depthTest: false
                     })
                 });
+
+                await this.handleSelection(intersection, event);
             }
         });
     }
