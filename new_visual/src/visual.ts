@@ -241,19 +241,41 @@ export class Visual implements IVisual {
         if (typeof WEB_IFC_WASM_BASE64 === 'string' && WEB_IFC_WASM_BASE64.length > 0) {
             try {
                 const originalFetch = (window as any).fetch.bind(window);
+                // Convert base64 to bytes and create a Blob URL so hosts that
+                // allow blob: URLs can load the wasm via the normal fetch flow.
+                const bytes = Uint8Array.from(atob(WEB_IFC_WASM_BASE64), c => c.charCodeAt(0));
+                let embeddedBlobUrl: string | null = null;
+                try {
+                    const blob = new Blob([bytes], { type: 'application/wasm' });
+                    embeddedBlobUrl = URL.createObjectURL(blob);
+                    // If we created a blob URL, try to set the wasm path to it
+                    // so some host flows that expect a file URL may work.
+                    try {
+                        this.ifcLoader.ifcManager.setWasmPath(embeddedBlobUrl);
+                    } catch (e) {
+                        // ignore
+                    }
+                } catch (be) {
+                    console.warn('Could not create embedded wasm Blob URL:', be);
+                }
+
                 (window as any).fetch = async (input: any, init?: any) => {
                     try {
                         const url = typeof input === 'string' ? input : (input && input.url) ? input.url : String(input);
                         if (url && url.toLowerCase().endsWith('web-ifc.wasm')) {
-                            const binary = Uint8Array.from(atob(WEB_IFC_WASM_BASE64), c => c.charCodeAt(0));
-                            return new Response(binary, { headers: { 'Content-Type': 'application/wasm' } });
+                            // Prefer returning the blob URL via originalFetch if available,
+                            // otherwise return an in-memory Response with the bytes.
+                            if (embeddedBlobUrl) {
+                                return originalFetch(embeddedBlobUrl);
+                            }
+                            return new Response(bytes, { headers: { 'Content-Type': 'application/wasm' } });
                         }
                     } catch (e) {
                         console.warn('Embedded WASM fetch fallback failed:', e);
                     }
                     return originalFetch(input, init);
                 };
-                console.log('Installed embedded WASM fetch fallback');
+                console.log('Installed embedded WASM Blob fetch fallback');
             } catch (e) {
                 console.warn('Failed to install embedded WASM fetch fallback:', e);
             }
@@ -355,13 +377,37 @@ export class Visual implements IVisual {
                 try {
                     this.setStatus('Retrying with embedded WASM...', false);
                     const bytes = Uint8Array.from(atob(WEB_IFC_WASM_BASE64), c => c.charCodeAt(0));
-                    // Try compiling the module and assigning to ifcManager (best-effort)
-                    const compiled = await WebAssembly.compile(bytes);
+                    // First, try compiling the module and assigning to ifcManager (best-effort)
                     try {
-                        (this.ifcLoader.ifcManager as any).wasmModule = compiled;
-                    } catch (assignErr) {
-                        console.warn('Could not set wasmModule on ifcManager:', assignErr);
+                        const compiled = await WebAssembly.compile(bytes);
+                        try {
+                            (this.ifcLoader.ifcManager as any).wasmModule = compiled;
+                            console.log('Assigned compiled wasm module to ifcManager');
+                        } catch (assignErr) {
+                            console.warn('Could not set wasmModule on ifcManager:', assignErr);
+                        }
+                    } catch (compileErr) {
+                        console.warn('WebAssembly.compile failed:', compileErr);
                     }
+
+                    // Next, try instantiating directly and assigning instance if available
+                    try {
+                        const instantiated = await WebAssembly.instantiate(bytes, {} as any);
+                        try {
+                            // Best-effort assign instance or module depending on implementation
+                            const mgrAny = this.ifcLoader.ifcManager as any;
+                            if (mgrAny) {
+                                if (instantiated && (instantiated as any).module) mgrAny.wasmModule = (instantiated as any).module;
+                                if ((instantiated as any).instance) mgrAny.wasmInstance = (instantiated as any).instance;
+                            }
+                            console.log('Assigned instantiated wasm to ifcManager');
+                        } catch (assignErr) {
+                            console.warn('Could not assign wasm instance/module on ifcManager:', assignErr);
+                        }
+                    } catch (instErr) {
+                        console.warn('WebAssembly.instantiate fallback failed:', instErr);
+                    }
+
                     // Retry parsing
                     const retryModel = await this.ifcLoader.ifcManager.parse(buffer);
                     retryModel.name = 'ifcModel';
