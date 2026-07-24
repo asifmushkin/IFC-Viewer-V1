@@ -71,6 +71,12 @@ export class Visual implements IVisual {
         this.formattingSettingsService = new FormattingSettingsService();
         this.target.style.position = "relative";
 
+        this.canvas = document.createElement("canvas");
+        this.canvas.style.width = "100%";
+        this.canvas.style.height = "100%";
+        this.canvas.style.display = "block";
+        this.target.appendChild(this.canvas);
+
         this.fileInput = document.createElement("input");
         this.fileInput.type = "file";
         this.fileInput.accept = ".ifc,.ifc.zip";
@@ -88,7 +94,7 @@ export class Visual implements IVisual {
         this.uploadButton.style.position = "absolute";
         this.uploadButton.style.top = "8px";
         this.uploadButton.style.left = "8px";
-        this.uploadButton.style.zIndex = "10";
+        this.uploadButton.style.zIndex = "10000";
         this.uploadButton.style.minWidth = "90px";
         this.uploadButton.style.padding = "6px 10px";
         this.uploadButton.style.fontSize = "12px";
@@ -103,7 +109,7 @@ export class Visual implements IVisual {
         this.resetButton.style.position = "absolute";
         this.resetButton.style.top = "8px";
         this.resetButton.style.left = "110px";
-        this.resetButton.style.zIndex = "10";
+        this.resetButton.style.zIndex = "10000";
         this.resetButton.style.minWidth = "90px";
         this.resetButton.style.padding = "6px 10px";
         this.resetButton.style.fontSize = "12px";
@@ -115,7 +121,7 @@ export class Visual implements IVisual {
         this.statusLabel.style.position = "absolute";
         this.statusLabel.style.top = "8px";
         this.statusLabel.style.right = "8px";
-        this.statusLabel.style.zIndex = "10";
+        this.statusLabel.style.zIndex = "10000";
         this.statusLabel.style.padding = "6px 10px";
         this.statusLabel.style.fontSize = "12px";
         this.statusLabel.style.color = "#ffffff";
@@ -124,12 +130,6 @@ export class Visual implements IVisual {
         this.statusLabel.style.pointerEvents = "none";
         this.statusLabel.textContent = "No model loaded";
         this.target.appendChild(this.statusLabel);
-
-        this.canvas = document.createElement("canvas");
-        this.canvas.style.width = "100%";
-        this.canvas.style.height = "100%";
-        this.canvas.style.display = "block";
-        this.target.appendChild(this.canvas);
 
         this.initThree();
         this.initIfcLoader();
